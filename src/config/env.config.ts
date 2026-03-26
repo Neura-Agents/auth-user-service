@@ -5,7 +5,7 @@ dotenv.config();
 export const ENV = {
     PORT: process.env.PORT || 3000,
     FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:8080',
-    SESSION_SECRET: process.env.SESSION_SECRET || 'super-secret-key-12345',
+    SESSION_SECRET: process.env.SESSION_SECRET || '',
     KEYCLOAK: {
         ISSUER_URL: process.env.KEYCLOAK_ISSUER_URL || 'http://keycloak:8080/realms/agentic-ai',
         PUBLIC_ISSUER_URL: process.env.KEYCLOAK_PUBLIC_ISSUER_URL || 'http://localhost:8081/realms/agentic-ai',

@@ -1,7 +1,27 @@
 import axios from 'axios';
+import jwt from 'jsonwebtoken';
+import jwksClient from 'jwks-rsa';
 import { ENV } from '../config/env.config';
 import { SessionDevice, LinkedAccount, CredentialsInfo } from '../models/auth';
 import { pool } from '../config/db.config';
+
+const client = jwksClient({
+    jwksUri: `${ENV.KEYCLOAK.ISSUER_URL}/protocol/openid-connect/certs`,
+    cache: true,
+    rateLimit: true,
+    jwksRequestsPerMinute: 5
+});
+
+function getKey(header: any, callback: any) {
+    client.getSigningKey(header.kid, (err, key: any) => {
+        if (err) {
+            callback(err);
+            return;
+        }
+        const signingKey = key.getPublicKey();
+        callback(null, signingKey);
+    });
+}
 
 export class UserService {
     /**
@@ -109,7 +129,25 @@ export class UserService {
     }
 
     /**
-     * Decoding JWT payload explicitly (since Kong verifies signature)
+     * Securely verify and decode JWT payload using Keycloak public keys (RS256)
+     */
+    static async verifyToken(token: string): Promise<Record<string, any>> {
+        return new Promise((resolve, reject) => {
+            jwt.verify(token, getKey, {
+                issuer: [ENV.KEYCLOAK.ISSUER_URL, ENV.KEYCLOAK.PUBLIC_ISSUER_URL],
+                algorithms: ['RS256']
+            }, (err, decoded) => {
+                if (err) {
+                    console.error('JWT Verification failed:', err.message);
+                    return reject(new Error(`Invalid token: ${err.message}`));
+                }
+                resolve(decoded as Record<string, any>);
+            });
+        });
+    }
+
+    /**
+     * Decoding JWT payload explicitly (LEGACY - used for backward compat if needed, but not recommended for auth)
      */
     static decodeTokenPayload(token: string): Record<string, unknown> {
         const base64Url = token.split('.')[1];

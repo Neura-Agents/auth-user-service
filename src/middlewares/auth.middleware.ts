@@ -18,7 +18,7 @@ export const requireBearerAuth = (req: Request, res: Response, next: NextFunctio
     next();
 };
 
-export const requirePlatformAdmin = (req: Request, res: Response, next: NextFunction): void => {
+export const requirePlatformAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const authHeader = req.headers.authorization || '';
         const token = authHeader.split(' ')[1];
@@ -28,18 +28,19 @@ export const requirePlatformAdmin = (req: Request, res: Response, next: NextFunc
             return;
         }
 
-        const payload = UserService.decodeTokenPayload(token) as any;
+        // SECURE: Verify the token signature, issuer, and expiration
+        const payload = await UserService.verifyToken(token);
         const roles = payload.realm_access?.roles || [];
 
         if (!roles.includes('platform-admin')) {
             console.warn(`Forbidden access attempt to ${req.url} by ${payload.preferred_username || payload.sub}`);
-            res.status(403).json({ error: 'Unauthorized' });
+            res.status(403).json({ error: 'Forbidden: Admin access required' });
             return;
         }
 
         next();
-    } catch (error) {
-        console.error('Role check error:', error);
-        res.status(401).json({ error: 'Unauthorized: Invalid token structure' });
+    } catch (error: any) {
+        console.error('PlatformAdmin Verification Error:', error.message);
+        res.status(401).json({ error: `Unauthorized: ${error.message}` });
     }
 };

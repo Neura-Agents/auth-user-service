@@ -22,5 +22,6 @@ export const ENV = {
         USER: process.env.DB_USER || 'postgres',
         PASSWORD: process.env.DB_PASSWORD || 'postgres',
         NAME: process.env.DB_NAME || 'neura-agents-platform',
-    }
+    },
+    API_KEY_SERVICE_URL: process.env.API_KEY_SERVICE_URL || 'http://api-key-service:3008'
 };

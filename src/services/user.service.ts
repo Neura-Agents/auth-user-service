@@ -32,6 +32,17 @@ export class UserService {
             userData.lastName
         ];
         await pool.query(query, values);
+
+        // Create default API key for the user (fire and forget or handle error)
+        try {
+            await axios.post(`${ENV.API_KEY_SERVICE_URL}/backend/api/api-keys/default/${userData.keycloak_id}`, {}, {
+                headers: {
+                    'Internal-Request': 'true' // Optional: help identify internal bypass
+                }
+            });
+        } catch (err: any) {
+            console.error(`Failed to create default API key for user ${userData.keycloak_id}:`, err.message);
+        }
     }
     static async getSessions(accessToken: string): Promise<SessionDevice[]> {
         const keycloakUrl = `${ENV.KEYCLOAK.ISSUER_URL}/account/sessions/devices`;

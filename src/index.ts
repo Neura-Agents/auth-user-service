@@ -1,6 +1,5 @@
 import express from 'express';
 import session from 'express-session';
-import cors from 'cors';
 import { ENV } from './config/env.config';
 import { initKeycloak } from './config/keycloak.config';
 import { initDb } from './config/db.config';
@@ -14,11 +13,6 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(express.json());
-
-app.use(cors({
-    origin: ENV.FRONTEND_URL,
-    credentials: true,
-}));
 
 app.use(
     session({

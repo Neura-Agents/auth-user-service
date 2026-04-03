@@ -137,11 +137,16 @@ export class AuthController {
     static getLogout(req: Request, res: Response): void {
         const redirectTo = req.query.redirect_to as string;
         
-        // Instead of just going back to the frontend, we point to our login endpoint 
-        // to immediately trigger the Keycloak login screen after the logout finishes.
-        const loginUrl = `${ENV.KEYCLOAK.KEYCLOAK_REDIRECT_URI.replace('/callback', '/login')}${redirectTo ? `?redirect_to=${encodeURIComponent(redirectTo)}` : ''}`;
+        // Instead of carrying over the 'redirect_to' from the logout into the next login,
+        // we determine if we should default back to the dashboard (8005) for the next session.
+        // If the user was on the public site (7999), we might want them to stay there, 
+        // but if they are logging out/in, they likely want the dashboard.
+        const dashboardUrl = ENV.FRONTEND_URL; // This is now http://localhost:8005
         
-        // Final landing URI for Keycloak's post_logout_redirect
+        // Final landing URI for Keycloak's post_logout_redirect.
+        // We point back to our login screen, but ensure its 'redirect_to' is the dashboard.
+        const loginUrl = `${ENV.KEYCLOAK.KEYCLOAK_REDIRECT_URI.replace('/callback', '/login')}?redirect_to=${encodeURIComponent(dashboardUrl)}`;
+        
         const postLogoutUri = loginUrl;
 
         if (!req.session.tokens || !req.session.tokens.id_token) {

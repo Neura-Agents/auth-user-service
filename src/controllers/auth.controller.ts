@@ -136,7 +136,13 @@ export class AuthController {
 
     static getLogout(req: Request, res: Response): void {
         const redirectTo = req.query.redirect_to as string;
-        const postLogoutUri = redirectTo ? `${ENV.FRONTEND_URL}?from=${encodeURIComponent(redirectTo)}` : ENV.FRONTEND_URL;
+        
+        // Instead of just going back to the frontend, we point to our login endpoint 
+        // to immediately trigger the Keycloak login screen after the logout finishes.
+        const loginUrl = `${ENV.KEYCLOAK.KEYCLOAK_REDIRECT_URI.replace('/callback', '/login')}${redirectTo ? `?redirect_to=${encodeURIComponent(redirectTo)}` : ''}`;
+        
+        // Final landing URI for Keycloak's post_logout_redirect
+        const postLogoutUri = loginUrl;
 
         if (!req.session.tokens || !req.session.tokens.id_token) {
             res.redirect(postLogoutUri);

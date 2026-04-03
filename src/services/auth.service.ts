@@ -10,7 +10,7 @@ export class AuthService {
     /**
      * Start the authentication flow by generating an auth URL and code_verifier
      */
-    static getAuthUrl(req: Request, idpHint?: string, action?: string): { authUrl: string; codeVerifier: string } {
+    static getAuthUrl(req: Request, idpHint?: string, action?: string, theme?: string): { authUrl: string; codeVerifier: string } {
         const keycloakClient = getKeycloakClient();
         const codeVerifier = generators.codeVerifier();
         const codeChallenge = generators.codeChallenge(codeVerifier);
@@ -21,6 +21,10 @@ export class AuthService {
             code_challenge_method: 'S256',
             redirect_uri: ENV.KEYCLOAK.KEYCLOAK_REDIRECT_URI,
         };
+
+        if (theme) {
+            params.ui_theme = theme;
+        }
 
         if (idpHint) {
             if (req.session.tokens) {
@@ -91,12 +95,13 @@ export class AuthService {
     /**
      * Logout logic
      */
-    static getLogoutUrl(idToken: string, postLogoutRedirectUri: string): string {
+    static getLogoutUrl(idToken: string, postLogoutRedirectUri: string, theme?: string): string {
         const keycloakClient = getKeycloakClient();
         let logoutUrl = keycloakClient.endSessionUrl({
             id_token_hint: idToken,
             post_logout_redirect_uri: postLogoutRedirectUri,
-        });
+            ui_theme: theme, // Pass theme to logout as well
+        } as any);
 
         const publicUrl = new URL(ENV.KEYCLOAK.PUBLIC_ISSUER_URL);
         const internalUrl = new URL(ENV.KEYCLOAK.ISSUER_URL);

@@ -8,8 +8,9 @@ export class AuthController {
         try {
             const idpHint = req.query.idp as string;
             const action = req.query.action as string;
+            const theme = req.query.theme as string;
 
-            const { authUrl, codeVerifier } = AuthService.getAuthUrl(req, idpHint, action);
+            const { authUrl, codeVerifier } = AuthService.getAuthUrl(req, idpHint, action, theme);
 
             // Capture redirect_to from query or default to frontend URL
             const redirectTo = req.query.redirect_to as string;
@@ -136,6 +137,7 @@ export class AuthController {
 
     static getLogout(req: Request, res: Response): void {
         const redirectTo = req.query.redirect_to as string;
+        const theme = req.query.theme as string;
         
         // Instead of carrying over the 'redirect_to' from the logout into the next login,
         // we determine if we should default back to the dashboard (8005) for the next session.
@@ -145,7 +147,8 @@ export class AuthController {
         
         // Final landing URI for Keycloak's post_logout_redirect.
         // We point back to our login screen, but ensure its 'redirect_to' is the dashboard.
-        const loginUrl = `${ENV.KEYCLOAK.KEYCLOAK_REDIRECT_URI.replace('/callback', '/login')}?redirect_to=${encodeURIComponent(dashboardUrl)}`;
+        // Also pass the theme back to the post-logout redirect landing page (which is our /login hint)
+        const loginUrl = `${ENV.KEYCLOAK.KEYCLOAK_REDIRECT_URI.replace('/callback', '/login')}?redirect_to=${encodeURIComponent(dashboardUrl)}${theme ? `&theme=${theme}` : ''}`;
         
         const postLogoutUri = loginUrl;
 
@@ -153,7 +156,7 @@ export class AuthController {
             res.redirect(postLogoutUri);
             return;
         }
-        const logoutUrl = AuthService.getLogoutUrl(req.session.tokens.id_token, postLogoutUri);
+        const logoutUrl = AuthService.getLogoutUrl(req.session.tokens.id_token, postLogoutUri, theme);
         req.session.destroy(() => { });
         res.redirect(logoutUrl);
     }

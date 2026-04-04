@@ -57,7 +57,8 @@ export class UserService {
         try {
             await axios.post(`${ENV.API_KEY_SERVICE_URL}/backend/api/api-keys/default/${userData.keycloak_id}`, {}, {
                 headers: {
-                    'Internal-Request': 'true' // Optional: help identify internal bypass
+                    'Internal-Request': 'true',
+                    'x-internal-key': ENV.INTERNAL_SERVICE_SECRET
                 }
             });
         } catch (err: any) {

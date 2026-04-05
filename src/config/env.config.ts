@@ -17,6 +17,7 @@ export const ENV = {
         KEYCLOAK_REDIRECT_URI: process.env.KEYCLOAK_REDIRECT_URI || 'http://localhost:8000/backend/auth/callback',
     },
     DB: {
+        URL: process.env.DATABASE_URL,
         HOST: process.env.DB_HOST || 'localhost',
         PORT: parseInt(process.env.DB_PORT || '5432'),
         USER: process.env.DB_USER || 'postgres',

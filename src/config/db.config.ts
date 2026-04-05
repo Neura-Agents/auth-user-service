@@ -1,14 +1,21 @@
 import { Pool } from 'pg';
 import { ENV } from './env.config';
 
-export const pool = new Pool({
-    host: ENV.DB.HOST,
-    port: ENV.DB.PORT,
-    user: ENV.DB.USER,
-    password: ENV.DB.PASSWORD,
-    database: ENV.DB.NAME,
-    options: `-c search_path=${ENV.DB.SCHEMA},public`,
-});
+export const pool = new Pool(
+    ENV.DB.URL
+        ? {
+            connectionString: ENV.DB.URL,
+            options: `-c search_path=${ENV.DB.SCHEMA},public`,
+        }
+        : {
+            host: ENV.DB.HOST,
+            port: ENV.DB.PORT,
+            user: ENV.DB.USER,
+            password: ENV.DB.PASSWORD,
+            database: ENV.DB.NAME,
+            options: `-c search_path=${ENV.DB.SCHEMA},public`,
+        }
+);
 
 export const initDb = async () => {
     try {

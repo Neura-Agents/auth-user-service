@@ -1,6 +1,19 @@
 import { Pool } from 'pg';
 import { ENV } from './env.config';
 
+console.log('--- DATABASE CONNECTION DEBUG ---');
+console.log('Using URL:', ENV.DB.URL ? 'YES (Masked)' : 'NO');
+console.log('Host:', ENV.DB.HOST);
+console.log('User:', ENV.DB.USER);
+console.log('Database:', ENV.DB.NAME);
+console.log('Schema:', ENV.DB.SCHEMA);
+console.log('Password Length:', ENV.DB.PASSWORD?.length || 0);
+if (ENV.DB.URL) {
+  const maskedUrl = ENV.DB.URL.replace(/:([^:@]+)@/, ':****@');
+  console.log('Processed Connection URL:', maskedUrl);
+}
+console.log('---------------------------------');
+
 export const pool = new Pool(
     ENV.DB.URL
         ? {

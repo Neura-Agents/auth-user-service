@@ -9,9 +9,8 @@ import userRoutes from './routes/user.routes';
 
 const app = express();
 
-// Trust the Kong Gateway and Cloudify/Traefik proxy headers
-// We set it to 2 because we have Traefik (Coolify) -> Kong -> Auth Service
-app.set('trust proxy', 2);
+// Trust all proxy headers (Coolify/Traefik and Kong)
+app.set('trust proxy', true);
 
 app.use(express.json());
 
@@ -37,6 +36,8 @@ app.use(
 // Debug middleware to check session state (must be after session middleware)
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    console.log(`Protocol: ${req.protocol}`); // This will tell us if it thinks it's http or https
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
     console.log(`Session ID: ${req.sessionID}`);
     console.log('User in session:', req.session?.user ? 'YES' : 'NO');
     next();

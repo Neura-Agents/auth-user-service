@@ -48,10 +48,13 @@ export class AuthService {
         const internalUrl = new URL(ENV.KEYCLOAK.ISSUER_URL);
 
         // Robust replacement:
-        // 1. Replace the configured internal issuer (keycloak:8080)
+        // 1. Replace the configured internal issuer (from the discovered metadata host)
         authUrl = authUrl.replace(internalUrl.host, publicUrl.host);
-        // 2. ALSO replace localhost:8080 just in case Keycloak returned that (due to KC_HOSTNAME config)
-        authUrl = authUrl.replace('localhost:8080', publicUrl.host);
+        // 2. ALSO replace any variation of localhost or 127.0.0.1 typically used in local development
+        authUrl = authUrl.replace('localhost:8081', publicUrl.host)
+                         .replace('localhost:8080', publicUrl.host)
+                         .replace('127.0.0.1:8081', publicUrl.host)
+                         .replace('127.0.0.1:8080', publicUrl.host);
         
         console.log(`[DEBUG] Final Redirecting browser to: ${authUrl}`);
 
@@ -108,7 +111,10 @@ export class AuthService {
 
         // Robust replacement for logout URL to ensure browser can resolve it
         logoutUrl = logoutUrl.replace(internalUrl.host, publicUrl.host);
-        logoutUrl = logoutUrl.replace('localhost:8080', publicUrl.host);
+        logoutUrl = logoutUrl.replace('localhost:8081', publicUrl.host)
+                             .replace('localhost:8080', publicUrl.host)
+                             .replace('127.0.0.1:8081', publicUrl.host)
+                             .replace('127.0.0.1:8080', publicUrl.host);
 
         return logoutUrl;
     }

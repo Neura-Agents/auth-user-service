@@ -42,18 +42,22 @@ app.use((req, res, next) => {
 app.use('/backend/auth', authRoutes);
 app.use('/backend/api/users', userRoutes);
 
-const startServer = async () => {
-    try {
-        await initDb();
-        await initKeycloak();
+export { app };
 
-        app.listen(ENV.PORT, () => {
-            console.log(`Backend Auth server running on port ${ENV.PORT}`);
-        });
-    } catch (error) {
-        console.error('Failed to start server:', error);
-        process.exit(1);
-    }
-};
+if (process.env.NODE_ENV !== 'test') {
+    const startServer = async () => {
+        try {
+            await initDb();
+            await initKeycloak();
 
-startServer();
+            app.listen(ENV.PORT, () => {
+                console.log(`Backend Auth server running on port ${ENV.PORT}`);
+            });
+        } catch (error) {
+            console.error('Failed to start server:', error);
+            process.exit(1);
+        }
+    };
+
+    startServer();
+}

@@ -113,6 +113,14 @@ describe('AuthController', () => {
              expect(res.status).toHaveBeenCalledWith(401);
         });
 
+        it('should return 401 if token expired and refresh_token missing', async () => {
+             const mockTokenSet = { expired: () => true, refresh_token: undefined };
+             (TokenSet as unknown as jest.Mock).mockReturnValue(mockTokenSet);
+             req.session.tokens = mockTokenSet;
+             await AuthController.getUser(req, res);
+             expect(res.status).toHaveBeenCalledWith(401);
+        });
+
         it('should refresh token if expired', async () => {
             const mockTokenSet = { expired: () => true, refresh_token: 'rt' };
             (TokenSet as unknown as jest.Mock).mockReturnValue(mockTokenSet);
@@ -139,6 +147,12 @@ describe('AuthController', () => {
 
     describe('getRefresh', () => {
         it('should return 401 if refresh tokens missing', async () => {
+             await AuthController.getRefresh(req, res);
+             expect(res.status).toHaveBeenCalledWith(401);
+        });
+
+        it('should return 401 if refresh_token property is missing from session tokens', async () => {
+             req.session.tokens = {};
              await AuthController.getRefresh(req, res);
              expect(res.status).toHaveBeenCalledWith(401);
         });

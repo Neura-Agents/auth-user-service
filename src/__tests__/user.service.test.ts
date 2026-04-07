@@ -8,15 +8,14 @@ jest.mock('../config/db.config');
 jest.mock('axios');
 jest.mock('jsonwebtoken');
 jest.mock('jwks-rsa', () => {
-    return jest.fn().mockImplementation(() => {
-        return {
-            getSigningKey: jest.fn((kid, callback) => {
-                callback(null, {
-                    getPublicKey: () => 'public-key'
-                });
-            })
-        };
-    });
+    const m = {
+        getSigningKey: jest.fn((kid, callback) => {
+            callback(null, {
+                getPublicKey: () => 'public-key'
+            });
+        })
+    };
+    return jest.fn(() => m);
 });
 
 describe('UserService', () => {
@@ -81,7 +80,10 @@ describe('UserService', () => {
         it('should verify token with RS256', async () => {
             const decodedPayload = { sub: 'u1' };
             (jwt.verify as jest.Mock).mockImplementation((token, key, opts, cb) => {
-                cb(null, decodedPayload);
+                key({ kid: '123' }, (err: any, signingKey: any) => {
+                    if (err) return cb(err);
+                    cb(null, decodedPayload);
+                });
             });
 
             const result = await UserService.verifyToken('t1');
@@ -89,11 +91,25 @@ describe('UserService', () => {
         });
 
         it('should reject if verification fails', async () => {
-            (jwt.verify as jest.Mock).mockImplementation((token, key, opts, cb) => {
+             (jwt.verify as jest.Mock).mockImplementation((token, key, opts, cb) => {
                 cb(new Error('Invalid'), null);
-            });
+             });
 
             await expect(UserService.verifyToken('t1')).rejects.toThrow('Invalid token');
+        });
+
+        it('should reject if getKey fails', async () => {
+            const mockClient = (jwksClient as any)();
+            mockClient.getSigningKey.mockImplementationOnce((kid: any, cb: any) => cb(new Error('JWKS Fail')));
+            
+            (jwt.verify as jest.Mock).mockImplementation((token, key, opts, cb) => {
+                key({ kid: '123' }, (err: any, signingKey: any) => {
+                    if (err) return cb(err);
+                    cb(null, {});
+                });
+            });
+
+            await expect(UserService.verifyToken('t1')).rejects.toThrow('JWKS Fail');
         });
     });
 
@@ -125,13 +141,24 @@ describe('UserService', () => {
             expect(mockPool.query).toHaveBeenCalledTimes(2);
         });
 
-        it('should work without filters', async () => {
+        it('should work with limit and offset', async () => {
              mockPool.query
                 .mockResolvedValueOnce({ rows: [] })
                 .mockResolvedValueOnce({ rows: [{ count: '0' }] });
 
-            const result = await UserService.getLocalUsers({});
-            expect(result.users).toEqual([]);
+            await UserService.getLocalUsers({ limit: 5, offset: 10 });
+            expect(mockPool.query).toHaveBeenCalledWith(expect.stringContaining('LIMIT'), expect.arrayContaining([5]));
+            expect(mockPool.query).toHaveBeenCalledWith(expect.stringContaining('OFFSET'), expect.arrayContaining([10]));
+        });
+
+        it('should work with search query', async () => {
+             mockPool.query
+                .mockResolvedValueOnce({ rows: [{ keycloak_id: '1' }] })
+                .mockResolvedValueOnce({ rows: [{ count: '1' }] });
+
+            const result = await UserService.getLocalUsers({ search: 'test' });
+            expect(result.total).toBe(1);
+            expect(mockPool.query).toHaveBeenCalledWith(expect.stringContaining('ILIKE'), expect.arrayContaining(['%test%']));
         });
     });
 });

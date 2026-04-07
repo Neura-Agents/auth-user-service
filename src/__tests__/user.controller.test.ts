@@ -44,6 +44,12 @@ describe('UserController', () => {
              await UserController.getLinkedAccounts(req, res);
              expect(res.json).toHaveBeenCalledWith(mockAccounts);
         });
+
+        it('should handle service errors', async () => {
+             (UserService.getLinkedAccounts as jest.Mock).mockRejectedValue(new Error('fail'));
+             await UserController.getLinkedAccounts(req, res);
+             expect(res.status).toHaveBeenCalledWith(500);
+        });
     });
 
     describe('getCredentials', () => {
@@ -52,6 +58,12 @@ describe('UserController', () => {
             (UserService.getCredentials as jest.Mock).mockResolvedValue(mockCreds);
             await UserController.getCredentials(req, res);
             expect(res.json).toHaveBeenCalledWith(mockCreds);
+        });
+
+        it('should handle service errors', async () => {
+            (UserService.getCredentials as jest.Mock).mockRejectedValue(new Error('fail'));
+            await UserController.getCredentials(req, res);
+            expect(res.status).toHaveBeenCalledWith(500);
         });
     });
 

@@ -29,10 +29,66 @@ describe('Config', () => {
         ({ initKeycloak, getKeycloakClient } = require('../config/keycloak.config'));
     });
 
+    describe('ENV Configuration Branches', () => {
+        it('should use default values for ENV properties', () => {
+             jest.isolateModules(() => {
+                const { ENV } = require('../config/env.config');
+                expect(ENV.PORT).toBeDefined();
+             });
+        });
+
+        it('should use provided values for all ENV properties', () => {
+             jest.isolateModules(() => {
+                const originalEnv = { ...process.env };
+                process.env.PORT = '4000';
+                process.env.DB_HOST = 'db';
+                process.env.DB_PORT = '5432';
+                process.env.DB_USER = 'u';
+                process.env.DB_PASSWORD = 'p';
+                process.env.DB_NAME = 'd';
+                process.env.DB_SCHEMA = 's';
+                process.env.DB_URL = 'url';
+                process.env.KEYCLOAK_URL = 'http://k';
+                process.env.KEYCLOAK_REALM = 'r';
+                process.env.KEYCLOAK_CLIENT_ID = 'c';
+                process.env.KEYCLOAK_CLIENT_SECRET = 's';
+                process.env.SESSION_SECRET = 'sec';
+                process.env.FRONTEND_URL = 'http://f';
+                process.env.ADMIN_CLIENT_ID = 'ac';
+                process.env.ADMIN_CLIENT_SECRET = 'as';
+
+                const { ENV } = require('../config/env.config');
+                expect(ENV.PORT).toBe("4000");
+                
+                // Cleanup
+                process.env = originalEnv;
+             });
+        });
+    });
+
+    describe('Keycloak Config Branches', () => {
+        it('should throw if client not initialized', () => {
+             jest.isolateModules(() => {
+                const { getKeycloakClient } = require('../config/keycloak.config');
+                expect(() => getKeycloakClient()).toThrow('Keycloak client not initialized yet');
+             });
+        });
+    });
+
     describe('DB Config', () => {
         it('initDb should correctly initialize database', async () => {
              await initDb();
              expect(pool.query).toHaveBeenCalled();
+        });
+
+        it('initDb should use ENV.DB.URL if provided', () => {
+             jest.isolateModules(() => {
+                const { ENV } = require('../config/env.config');
+                ENV.DB.URL = 'postgresql://user:pass@localhost:5432/db';
+                const { Pool } = require('pg');
+                require('../config/db.config');
+                expect(Pool).toHaveBeenCalledWith(expect.objectContaining({ connectionString: ENV.DB.URL }));
+             });
         });
 
         it('initDb should handle errors', async () => {

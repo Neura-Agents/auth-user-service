@@ -123,11 +123,13 @@ describe('AuthService', () => {
 
     describe('localLogin', () => {
         it('should login locally and return tokenSet and userInfo', async () => {
-            (axios.post as jest.Mock).mockResolvedValue({ data: { access_token: 'at' } });
+             const { ENV } = require('../config/env.config');
+             ENV.KEYCLOAK.CLIENT_SECRET = 'some-secret';
+             (axios.post as jest.Mock).mockResolvedValue({ data: { access_token: 'at' } });
             
-            const result = await AuthService.localLogin('user', 'pass');
-            expect(axios.post).toHaveBeenCalled();
-            expect(result.userInfo.sub).toBe('user123');
+             const result = await AuthService.localLogin('user', 'pass');
+             expect(axios.post).toHaveBeenCalled();
+             expect(result.userInfo.sub).toBe('user123');
         });
 
         it('should throw error on failed login', async () => {
@@ -162,6 +164,15 @@ describe('AuthService', () => {
             await expect(AuthService.localRegister({}))
                 .rejects.toThrow('Admin Client Secret not configured on backend.');
             ENV.KEYCLOAK.ADMIN_CLIENT_SECRET = original;
+        });
+
+        it('should throw during register if createUser call fails', async () => {
+            (axios.post as jest.Mock)
+                .mockResolvedValueOnce({ data: { access_token: 'admin-at' } })
+                .mockRejectedValueOnce(new Error('User Creation Failed'));
+            
+            await expect(AuthService.localRegister({ username: 'u' }))
+                .rejects.toThrow('User Creation Failed');
         });
     });
 

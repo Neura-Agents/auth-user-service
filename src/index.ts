@@ -13,9 +13,17 @@ const isProduction = process.env.NODE_ENV === 'production' || ENV.FRONTEND_URL.i
 
 app.use(express.json());
 
-// Trust all proxy headers (Coolify/Traefik/Kong)
-// 'true' trusts all, which is usually fine in container environments
-app.set('trust proxy', true); 
+// Trust all proxy headers
+app.set('trust proxy', true);
+
+// Pre-session middleware to fix proxy headers in production
+app.use((req, res, next) => {
+    if (isProduction) {
+        // Force HTTPS detection regardless of what the proxy says
+        req.headers['x-forwarded-proto'] = 'https';
+    }
+    next();
+});
 
 app.use(
     session({

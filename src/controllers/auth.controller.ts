@@ -21,7 +21,15 @@ export class AuthController {
             // Store the verifier in the session for callbacks
             req.session.code_verifier = codeVerifier;
 
-            res.redirect(authUrl);
+            // Explicitly save the session before redirecting to avoid race conditions
+            req.session.save((err) => {
+                if (err) {
+                    console.error('Failed to save session for login:', err);
+                    res.status(500).send('Login initiation failed');
+                    return;
+                }
+                res.redirect(authUrl);
+            });
         } catch (error) {
             console.error('Login initiation failed:', error);
             res.status(500).send('Login initiation failed');

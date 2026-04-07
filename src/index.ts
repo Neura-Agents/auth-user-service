@@ -9,10 +9,13 @@ import userRoutes from './routes/user.routes';
 
 const app = express();
 
-// Trust the Kong Gateway proxy headers
-app.set('trust proxy', 1);
+// Trust the Kong Gateway and Cloudify/Traefik proxy headers
+// We set it to 2 because we have Traefik (Coolify) -> Kong -> Auth Service
+app.set('trust proxy', 2);
 
 app.use(express.json());
+
+const isProduction = process.env.NODE_ENV === 'production' || ENV.FRONTEND_URL.includes('wormlabs.in');
 
 app.use(
     session({
@@ -23,9 +26,10 @@ app.use(
         proxy: true,
         cookie: {
             httpOnly: true,
-            secure: false,
+            secure: isProduction, // Set to true for HTTPS in production
             sameSite: 'lax',
             path: '/',
+            domain: isProduction ? '.wormlabs.in' : undefined, // Share cookie across all subdomains
         }
     })
 );

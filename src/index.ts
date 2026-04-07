@@ -19,27 +19,40 @@ const isProduction = process.env.NODE_ENV === 'production' || ENV.FRONTEND_URL.i
 app.use(
     session({
         name: 'neura_sid',
-        secret: ENV.SESSION_SECRET,
+        secret: ENV.SESSION_SECRET || 'fallback-secret-for-dev',
         resave: false,
-        saveUninitialized: true,
+        saveUninitialized: false, // Changed to false to avoid empty sessions
         proxy: true,
         cookie: {
             httpOnly: true,
-            secure: isProduction, // Set to true for HTTPS in production
-            sameSite: 'lax',
+            secure: isProduction, 
+            sameSite: isProduction ? 'none' : 'lax', // Use 'none' in prod for cross-subdomain redirects
             path: '/',
-            domain: isProduction ? '.wormlabs.in' : undefined, // Share cookie across all subdomains
+            domain: isProduction ? '.wormlabs.in' : undefined,
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
         }
     })
 );
 
-// Debug middleware to check session state (must be after session middleware)
+// Enhanced debug middleware
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    console.log(`Protocol: ${req.protocol}`); // This will tell us if it thinks it's http or https
-    console.log('Headers:', JSON.stringify(req.headers, null, 2));
-    console.log(`Session ID: ${req.sessionID}`);
-    console.log('User in session:', req.session?.user ? 'YES' : 'NO');
+    const now = new Date().toISOString();
+    console.log(`[${now}] ${req.method} ${req.url}`);
+    
+    // Check for session presence
+    if (!req.session) {
+        console.warn(`[${now}] ❌ SESSION MIDDLEWARE NOT WORKING`);
+    } else {
+        console.log(`[${now}] Session ID: ${req.sessionID}`);
+        console.log(`[${now}] Verifier present: ${!!req.session.code_verifier}`);
+        console.log(`[${now}] User present: ${!!req.session.user}`);
+    }
+
+    // Log proxy headers to verify trust proxy is working
+    const proto = req.headers['x-forwarded-proto'];
+    const host = req.headers['x-forwarded-host'];
+    console.log(`[${now}] Proto: ${proto}, Host: ${host}, Secure: ${req.secure}`);
+    
     next();
 });
 

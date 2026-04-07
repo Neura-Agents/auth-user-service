@@ -159,19 +159,21 @@ export class AuthService {
             throw new Error('Admin Client Secret not configured on backend.');
         }
 
-        const adminTokenUrl = 'http://keycloak:8080/realms/master/protocol/openid-connect/token';
-        const adminParams = new URLSearchParams();
-        adminParams.append('client_id', ENV.KEYCLOAK.ADMIN_CLIENT_ID);
-        adminParams.append('client_secret', ENV.KEYCLOAK.ADMIN_CLIENT_SECRET);
-        adminParams.append('grant_type', 'client_credentials');
-
         try {
-            const tokenResp = await axios.post(adminTokenUrl, adminParams, {
+            // Construct admin base URL from issuer URL
+            const issuerUrl = new URL(ENV.KEYCLOAK.ISSUER_URL);
+            const adminBaseUrl = `${issuerUrl.protocol}//${issuerUrl.host}`;
+            
+            const tokenResp = await axios.post(`${adminBaseUrl}/realms/master/protocol/openid-connect/token`, new URLSearchParams({
+                grant_type: 'client_credentials',
+                client_id: ENV.KEYCLOAK.ADMIN_CLIENT_ID,
+                client_secret: ENV.KEYCLOAK.ADMIN_CLIENT_SECRET
+            }).toString(), {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             });
             const adminToken = tokenResp.data.access_token;
 
-            const createUserUrl = 'http://keycloak:8080/admin/realms/agentic-ai/users';
+            const createUserUrl = `${adminBaseUrl}/admin/realms/agentic-ai/users`;
             const userPayload = {
                 username: payload.username,
                 email: payload.email,
